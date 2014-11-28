@@ -17,10 +17,65 @@ class Game():
         self.turn = "white"
 
     def change_turn(self):
-        if self.turn == "white":
-            self.turn = "black"
+        pass
+        # if self.turn == "white":
+        #     self.turn = "black"
+        # else:
+        #     self.turn = "white"
+
+    def check_for_diags(self, x_from, y_from, x_to, y_to):
+        if x_from + y_from == x_to + y_to:
+            current_diag = x_from + y_from
+            possible_cells = []
+            for i in range(min(x_from, x_to) + 1, max(x_from, x_to)):
+                for j in range(min(y_from, y_to) + 1, max(y_from, y_to)):
+                    if i + j == current_diag:
+                        possible_cells.append((i, j))
+            allow = True
+            for i in range(len(possible_cells)):
+                if self.board.board[possible_cells[i][1]][possible_cells[i][0]] is not None:
+                    allow = False
+            if allow:
+                self.change_turn()
+            return allow
+        elif y_from - x_from == y_to - x_to:
+            current_diag = y_from - x_from
+            possible_cells = []
+            for i in range(min(x_from, x_to) + 1, max(x_from, x_to)):
+                for j in range(min(y_from, y_to)  + 1, max(y_from, y_to)):
+                    if j - i == current_diag:
+                        possible_cells.append((i, j))
+            allow = True
+            for i in range(len(possible_cells)):
+                if self.board.board[possible_cells[i][1]][possible_cells[i][0]] is not None:
+                    allow = False
+            if allow:
+                self.change_turn()
+            return allow
         else:
-            self.turn = "white"
+            return False
+
+    def check_for_lines(self, x_from, y_from, x_to, y_to):
+        if x_from == x_to:
+            allow = True
+            for i in range(min(y_from, y_to) + 1, max(y_from, y_to)):
+                if self.board.board[i][x_from] is not None:
+                    allow = False
+            if allow:
+                self.change_turn()
+            return allow
+
+        elif y_from == y_to:
+            allow = True
+            for i in range(min(x_from, x_to) + 1, max(x_from, x_to)):
+                if self.board.board[y_from][i] is not None:
+                    allow = False
+            if allow:
+                self.change_turn()
+            return allow
+        else:
+            return False
+
 
     def check(self, start, end):
         x_from, y_from = start
@@ -31,6 +86,7 @@ class Game():
             end_figure = self.board.board[y_to][x_to]
         if self.board.board[y_from][x_from] is not None:
             if (self.board.board[y_from][x_from].color == self.turn) & (end_figure.color != self.board.board[y_from][x_from].color):
+
                 if isinstance(self.board.board[y_from][x_from], Figures.King):
                     if (abs(x_from - x_to) < 2) & (abs(y_from - y_to) < 2):
                         self.change_turn()
@@ -39,16 +95,17 @@ class Game():
                         return False
 
                 if isinstance(self.board.board[y_from][x_from], Figures.Queen):
-                    if (x_from == x_to) | (y_from == y_to) | ((x_from + y_from == x_to + y_to) | (y_from - x_from == y_to - x_to)):
-                        self.change_turn()
-                        return True
+                    if (x_from == x_to) | (y_from == y_to) | \
+                       ((x_from + y_from == x_to + y_to) | (y_from - x_from == y_to - x_to)):
+                        return self.check_for_lines(x_from, y_from, x_to, y_to) | \
+                               self.check_for_diags(x_from, y_from, x_to, y_to)
+
                     else:
                         return False
 
                 if isinstance(self.board.board[y_from][x_from], Figures.Tower):
                     if (x_from == x_to) | (y_from == y_to):
-                        self.change_turn()
-                        return True
+                        return self.check_for_lines(x_from, y_from, x_to, y_to)
                     else:
                         return False
 
@@ -63,8 +120,13 @@ class Game():
                 if isinstance(self.board.board[y_from][x_from], Figures.Pawn):
                     if self.board.board[y_from][x_from].color == "white":
                         if (x_to == x_from) & (y_from - y_to < 3) & (y_from - y_to > 0) & (end_figure.color == "none") & (y_from == 6):
-                            self.change_turn()
-                            return True
+                            allow = True
+                            for i in range(min(y_from, y_to) + 1, max(y_from, y_to)):
+                                if self.board.board[i][x_from] is not None:
+                                    allow = False
+                            if allow:
+                                self.change_turn()
+                            return allow
                         else:
                             if (x_to == x_from) & (y_from - y_to < 2) & (y_from - y_to > 0) & (end_figure.color == "none"):
                                 self.change_turn()
@@ -78,8 +140,13 @@ class Game():
                     else:
                         if self.board.board[y_from][x_from].color == "black":
                             if (x_to == x_from) & (y_to - y_from < 3) & (y_to - y_from > 0) & (end_figure.color == "none") & (y_from == 1):
-                                self.change_turn()
-                                return True
+                                allow = True
+                                for i in range(min(y_from, y_to) + 1, max(y_from, y_to)):
+                                    if self.board.board[i][x_from] is not None:
+                                        allow = False
+                                if allow:
+                                    self.change_turn()
+                                return allow
                             else:
                                 if (x_to == x_from) & (y_to - y_from < 2) & (y_to - y_from > 0) & (end_figure.color == "none"):
                                     self.change_turn()
@@ -96,7 +163,6 @@ class Game():
 
                 if isinstance(self.board.board[y_from][x_from], Figures.Bishop):
                     if (x_from + y_from == x_to + y_to) | (y_from - x_from == y_to - x_to):
-                        self.change_turn()
-                        return True
+                        return self.check_for_diags(x_from, y_from, x_to, y_to)
                     else:
                         return False
