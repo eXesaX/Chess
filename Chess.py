@@ -9,53 +9,61 @@ import chessGUI
 class Game():
     turn = "white"
     board = None
+    hit_cells = []
 
-    hit_cells = [
-        [False, False, False, False, False, False, False, False],
-        [False, False, False, False, False, False, False, False],
-        [False, False, False, False, False, False, False, False],
-        [False, False, False, False, False, False, False, False],
-        [False, False, False, False, False, False, False, False],
-        [False, False, False, False, False, False, False, False],
-        [False, False, False, False, False, False, False, False],
-        [False, False, False, False, False, False, False, False],
-        ]
-
-    def find_hit_cells(self):
-        # for i in range[]
-        pass
 
     def __init__(self):
         self.board = Chessboard.ChessBoard()
         self.turn = "white"
 
     def change_turn(self):
-        pass
+
         if self.turn == "white":
             self.turn = "black"
         else:
             self.turn = "white"
+        self.find_hit_cells()
 
-    def is_under_strike(self, x_from, y_from, x_to, y_to, end_figure):
+
+    def find_hit_cells(self):
+        # тут я понял, что наверное было бы лучше возвращать списки возможных ходов в check_for_...(),
+        # но т.к. почти всю структуру проверки придется переделывать... то так:
+        self.hit_cells = []
+        for x_from in range(7):
+            for y_from in range(7):
+                for x_to in range(7):
+                    for y_to in range(7):
+                            if self.board.board[y_from][x_from] is not None:
+                                if self.is_under_strike(x_from, y_from, x_to, y_to) & (self.board.board[y_from][x_from].color != self.turn):
+                                    self.hit_cells.append((x_to, y_to))
+
+    def is_in_check(self, x, y):
+        if (x, y) in self.hit_cells:
+            return True
+        else:
+            return False
+
+    def check(self, start, end):
+        x_from, y_from = start
+        x_to, y_to = end
+        if self.board.board[y_to][x_to] is None:
+            end_figure = Figures.Figure("none")  # у NoneType нет атрибута color, поэтому создаем виртуальный
+        else:
+            end_figure = self.board.board[y_to][x_to]
+        if self.board.board[y_from][x_from] is not None:
+            if (self.board.board[y_from][x_from].color == self.turn) & (end_figure.color != self.board.board[y_from][x_from].color):
+                can_go = self.is_under_strike(x_from, y_from, x_to, y_to)
+                if can_go:
+                    self.change_turn()
+                return can_go
+
+    def is_under_strike(self, x_from, y_from, x_to, y_to):
         return self.check_for_bishop(x_from, y_from, x_to, y_to) | \
                self.check_for_king(x_from, y_from, x_to, y_to) | \
                self.check_for_queen(x_from, y_from, x_to, y_to) | \
                self.check_for_horse(x_from, y_from, x_to, y_to) | \
                self.check_for_tower(x_from, y_from, x_to, y_to) | \
-               self.check_for_pawn(x_from, y_from, x_to, y_to, end_figure)
-
-    def check(self, start, end):
-        x_from, y_from = start
-        x_to, y_to = end
-
-        if self.board.board[y_to][x_to] is None:
-            end_figure = Figures.Figure("none") #?
-        else:
-            end_figure = self.board.board[y_to][x_to]
-
-        if self.board.board[y_from][x_from] is not None:
-            if (self.board.board[y_from][x_from].color == self.turn) & (end_figure.color != self.board.board[y_from][x_from].color):
-                return self.is_under_strike(x_from, y_from, x_to, y_to, end_figure)
+               self.check_for_pawn(x_from, y_from, x_to, y_to)
 
     def check_for_diags(self, x_from, y_from, x_to, y_to):
         if x_from + y_from == x_to + y_to:
@@ -69,8 +77,6 @@ class Game():
             for i in range(len(possible_cells)):
                 if self.board.board[possible_cells[i][1]][possible_cells[i][0]] is not None:
                     allow = False
-            if allow:
-                self.change_turn()
             return allow
         elif y_from - x_from == y_to - x_to:
             current_diag = y_from - x_from
@@ -83,8 +89,6 @@ class Game():
             for i in range(len(possible_cells)):
                 if self.board.board[possible_cells[i][1]][possible_cells[i][0]] is not None:
                     allow = False
-            if allow:
-                self.change_turn()
             return allow
         else:
             return False
@@ -95,8 +99,6 @@ class Game():
             for i in range(min(y_from, y_to) + 1, max(y_from, y_to)):
                 if self.board.board[i][x_from] is not None:
                     allow = False
-            if allow:
-                self.change_turn()
             return allow
 
         elif y_from == y_to:
@@ -104,8 +106,6 @@ class Game():
             for i in range(min(x_from, x_to) + 1, max(x_from, x_to)):
                 if self.board.board[y_from][i] is not None:
                     allow = False
-            if allow:
-                self.change_turn()
             return allow
         else:
             return False
@@ -124,8 +124,7 @@ class Game():
 
     def check_for_king(self, x_from, y_from, x_to, y_to):
         if isinstance(self.board.board[y_from][x_from], Figures.King):
-            if (abs(x_from - x_to) < 2) & (abs(y_from - y_to) < 2):
-                self.change_turn()
+            if (abs(x_from - x_to) < 2) & (abs(y_from - y_to) < 2) & (not self.is_in_check(x_to, y_to)):
                 return True
             else:
                 return False
@@ -144,12 +143,12 @@ class Game():
     def check_for_horse(self, x_from, y_from, x_to, y_to):
         if isinstance(self.board.board[y_from][x_from], Figures.Knight):
             if (abs(x_from - x_to) == 2) & (abs(y_from - y_to) == 1) | \
-                            (abs(x_from - x_to) == 1) & (abs(y_from - y_to) == 2):
-                self.change_turn()
+               (abs(x_from - x_to) == 1) & (abs(y_from - y_to) == 2):
                 return True
             else:
                 return False
-        else: return False
+        else:
+            return False
 
     def check_for_bishop(self, x_from, y_from, x_to, y_to):
         if isinstance(self.board.board[y_from][x_from], Figures.Bishop):
@@ -160,7 +159,12 @@ class Game():
         else:
             return False
 
-    def check_for_pawn(self, x_from, y_from, x_to, y_to, end_figure):
+    def check_for_pawn(self, x_from, y_from, x_to, y_to):
+        if self.board.board[y_to][x_to] is None:
+            end_figure = Figures.Figure("none") #?
+        else:
+            end_figure = self.board.board[y_to][x_to]
+
         if isinstance(self.board.board[y_from][x_from], Figures.Pawn):
             if self.board.board[y_from][x_from].color == "white":
                 if (x_to == x_from) & (y_from - y_to < 3) & (y_from - y_to > 0) & (end_figure.color == "none") & (y_from == 6):
@@ -168,16 +172,12 @@ class Game():
                     for i in range(min(y_from, y_to) + 1, max(y_from, y_to)):
                         if self.board.board[i][x_from] is not None:
                             allow = False
-                    if allow:
-                        self.change_turn()
                     return allow
                 else:
                     if (x_to == x_from) & (y_from - y_to < 2) & (y_from - y_to > 0) & (end_figure.color == "none"):
-                        self.change_turn()
                         return True
                     else:
                         if (abs(x_to - x_from) == 1) & (y_from - y_to == 1) & (end_figure.color == "black"):
-                            self.change_turn()
                             return True
                         else:
                             return False
@@ -188,16 +188,12 @@ class Game():
                         for i in range(min(y_from, y_to) + 1, max(y_from, y_to)):
                             if self.board.board[i][x_from] is not None:
                                 allow = False
-                        if allow:
-                            self.change_turn()
                         return allow
                     else:
                         if (x_to == x_from) & (y_to - y_from < 2) & (y_to - y_from > 0) & (end_figure.color == "none"):
-                            self.change_turn()
                             return True
                         else:
                             if (abs(x_to - x_from) == 1) & (y_from - y_to == -1) & (end_figure.color == "white"):
-                                self.change_turn()
                                 return True
                             else:
                                 return False
