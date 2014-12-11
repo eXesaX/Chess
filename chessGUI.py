@@ -41,9 +41,14 @@ class GGame(Chess.Game):
                     end = self.g_chessboard.convert_position_backwards((x_to, y_to))
                     if (self.check((x_from, y_from), (x_to, y_to))):
                         self.g_chessboard.move_figure(start, end)
-            #drawing code here
-            self.g_chessboard.draw()
 
+            #drawing code here
+
+            self.g_chessboard.draw()
+            self.find_hit_cells()
+            for pair in self.hit_cells:
+                x, y = pair
+                pygame.draw.circle(screen, (0, 255, 255), (x * self.g_chessboard.cell_size + int(self.g_chessboard.cell_size / 2), y * self.g_chessboard.cell_size + int(self.g_chessboard.cell_size / 2)), 5, 0)
             pygame.display.flip()
 
 
