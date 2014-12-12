@@ -16,6 +16,7 @@ class Game():
     w2_tower_state = True
     b1_tower_state = True
     b2_tower_state = True
+    pawn_to_replace = None
 
     def __init__(self):
         self.board = Chessboard.ChessBoard()
@@ -38,7 +39,8 @@ class Game():
                     for y_to in range(8):
                         if self.board.board[y_from][x_from] is not None:
                             if self.is_under_strike(x_from, y_from, x_to, y_to) and \
-                               (self.board.board[y_from][x_from].color != self.turn):
+                               (self.board.board[y_from][x_from].color != self.turn) and \
+                               ((x_from, y_from) != (x_to, y_to)):
                                 self.hit_cells.append((x_to, y_to))
 
     def is_in_check(self, x, y):
@@ -74,7 +76,12 @@ class Game():
                     if self.is_current_king_in_check():
                         self.board.move_figure(self.board.convert_position_backwards(end), self.board.convert_position_backwards(start))
                     else:
+                        self.find_pawn_for_replace()
+                        if self.pawn_to_replace is not None:
+                            self.ask_for_figure()
+                        print(self.pawn_to_replace)
                         self.change_turn()
+
 
     def is_able_to_go(self, x_from, y_from, x_to, y_to):
         return self.check_for_bishop(x_from, y_from, x_to, y_to) or \
@@ -121,6 +128,24 @@ class Game():
                     # print("it is right black tower")
                     self.b2_tower_state = False
 
+    def find_pawn_for_replace(self):
+        for i in range(0, 8):
+            if isinstance(self.board.board[0][i], Figures.Pawn):
+                if self.board.board[7][i].color == "white":
+                    self.pawn_to_replace = (i, 0)
+            if isinstance(self.board.board[7][i], Figures.Pawn):
+                if self.board.board[0][i].color == "black":
+                    self.pawn_to_replace = (i, 7)
+
+    def replace_pawn_with(self, figure):
+        if self.pawn_to_replace is not None:
+            x, y = self.pawn_to_replace
+            self.board.board[y][x] = figure
+            self.pawn_to_replace = None
+
+    def ask_for_figure(self):
+        pass
+
     def check_for_diags(self, x_from, y_from, x_to, y_to):
         if x_from + y_from == x_to + y_to:
             current_diag = x_from + y_from
@@ -138,7 +163,7 @@ class Game():
             current_diag = y_from - x_from
             possible_cells = []
             for i in range(min(x_from, x_to) + 1, max(x_from, x_to)):
-                for j in range(min(y_from, y_to)  + 1, max(y_from, y_to)):
+                for j in range(min(y_from, y_to) + 1, max(y_from, y_to)):
                     if j - i == current_diag:
                         possible_cells.append((i, j))
             allow = True
