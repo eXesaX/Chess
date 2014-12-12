@@ -34,21 +34,36 @@ class GGame(Chess.Game):
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     x_from, y_from = pygame.mouse.get_pos()
                     x_from, y_from = int(x_from / self.g_chessboard.cell_size), int(y_from / self.g_chessboard.cell_size)
-                    start = self.g_chessboard.convert_position_backwards((x_from, y_from))
+                    # start = self.g_chessboard.convert_position_backwards((x_from, y_from))
+                    print(str(x_from) + " " + str(y_from))
                 if event.type == pygame.MOUSEBUTTONUP:
                     x_to, y_to = pygame.mouse.get_pos()
                     x_to, y_to = int(x_to / self.g_chessboard.cell_size), int(y_to / self.g_chessboard.cell_size)
-                    end = self.g_chessboard.convert_position_backwards((x_to, y_to))
-                    if (self.check((x_from, y_from), (x_to, y_to))):
-                        self.g_chessboard.move_figure(start, end)
+                    # end = self.g_chessboard.convert_position_backwards((x_to, y_to))
+                    self.check_and_move((x_from, y_from), (x_to, y_to))
+                        # self.g_chessboard.move_figure(start, end)
 
             #drawing code here
 
             self.g_chessboard.draw()
+            # DEBUG
             self.find_hit_cells()
             for pair in self.hit_cells:
                 x, y = pair
                 pygame.draw.circle(screen, (0, 255, 255), (x * self.g_chessboard.cell_size + int(self.g_chessboard.cell_size / 2), y * self.g_chessboard.cell_size + int(self.g_chessboard.cell_size / 2)), 5, 0)
+            if self.b_king_state:
+                pygame.draw.circle(screen, (255, 0, 255), (4 * self.g_chessboard.cell_size + int(self.g_chessboard.cell_size / 2), 0 * self.g_chessboard.cell_size + int(self.g_chessboard.cell_size / 2)), 5, 0)
+            if self.w_king_state:
+                pygame.draw.circle(screen, (255, 0, 255), (4 * self.g_chessboard.cell_size + int(self.g_chessboard.cell_size / 2), 7 * self.g_chessboard.cell_size + int(self.g_chessboard.cell_size / 2)), 5, 0)
+            if self.w1_tower_state:
+                pygame.draw.circle(screen, (255, 0, 255), (0 * self.g_chessboard.cell_size + int(self.g_chessboard.cell_size / 2), 7 * self.g_chessboard.cell_size + int(self.g_chessboard.cell_size / 2)), 5, 0)
+            if self.w2_tower_state:
+                pygame.draw.circle(screen, (255, 0, 255), (7 * self.g_chessboard.cell_size + int(self.g_chessboard.cell_size / 2), 7 * self.g_chessboard.cell_size + int(self.g_chessboard.cell_size / 2)), 5, 0)
+            if self.b1_tower_state:
+                pygame.draw.circle(screen, (255, 0, 255), (0 * self.g_chessboard.cell_size + int(self.g_chessboard.cell_size / 2), 0 * self.g_chessboard.cell_size + int(self.g_chessboard.cell_size / 2)), 5, 0)
+            if self.b2_tower_state:
+                pygame.draw.circle(screen, (255, 0, 255), (7 * self.g_chessboard.cell_size + int(self.g_chessboard.cell_size / 2), 0 * self.g_chessboard.cell_size + int(self.g_chessboard.cell_size / 2)), 5, 0)
+            # /DEBUG
             pygame.display.flip()
 
 

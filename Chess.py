@@ -10,6 +10,12 @@ class Game():
     turn = "white"
     board = None
     hit_cells = []
+    w_king_state = True
+    b_king_state = True
+    w1_tower_state = True
+    w2_tower_state = True
+    b1_tower_state = True
+    b2_tower_state = True
 
     def __init__(self):
         self.board = Chessboard.ChessBoard()
@@ -41,7 +47,17 @@ class Game():
         else:
             return False
 
-    def check(self, start, end):
+    def is_current_king_in_check(self):
+        is_in_check = False
+        for x in range(8):
+            for y in range(8):
+                if self.board.board[y][x] is not None:
+                    if (isinstance(self.board.board[y][x], Figures.King)) and (self.board.board[y][x].color == self.turn):
+                        if self.is_in_check(x, y):
+                            is_in_check = True
+        return is_in_check
+
+    def check_and_move(self, start, end):
         x_from, y_from = start
         x_to, y_to = end
         if self.board.board[y_to][x_to] is None:
@@ -51,10 +67,14 @@ class Game():
         if self.board.board[y_from][x_from] is not None:
             if (self.board.board[y_from][x_from].color == self.turn) and \
                (end_figure.color != self.board.board[y_from][x_from].color):
-                can_go = self.is_able_to_go(x_from, y_from, x_to, y_to)
-                if can_go:
-                    self.change_turn()
-                return can_go
+                if self.is_able_to_go(x_from, y_from, x_to, y_to) or self.check_for_king(x_from, y_from, x_to, y_to):
+                    self.detect_first_move(x_from, y_from)
+                    self.board.move_figure(self.board.convert_position_backwards(start), self.board.convert_position_backwards(end))
+                    self.find_hit_cells()
+                    if self.is_current_king_in_check():
+                        self.board.move_figure(self.board.convert_position_backwards(end), self.board.convert_position_backwards(start))
+                    else:
+                        self.change_turn()
 
     def is_able_to_go(self, x_from, y_from, x_to, y_to):
         return self.check_for_bishop(x_from, y_from, x_to, y_to) or \
@@ -66,11 +86,40 @@ class Game():
 
     def is_under_strike(self, x_from, y_from, x_to, y_to):
         return self.check_for_bishop(x_from, y_from, x_to, y_to) or \
-               self.check_for_king(x_from, y_from, x_to, y_to) or \
+               self.check_for_king_strike(x_from, y_from, x_to, y_to) or \
                self.check_for_queen(x_from, y_from, x_to, y_to) or \
                self.check_for_horse(x_from, y_from, x_to, y_to) or \
                self.check_for_tower(x_from, y_from, x_to, y_to) or \
                self.check_for_pawn_strike(x_from, y_from, x_to, y_to)
+
+    def detect_first_move(self, x_from, y_from):
+        # print("detect started")
+        if isinstance(self.board.board[y_from][x_from], Figures.King):
+            # print("this is king")
+            if self.board.board[y_from][x_from].color == "white":
+                # print("it is white")
+                self.w_king_state = False
+            else:
+                # print("it is black")
+                self.b_king_state = False
+        if isinstance(self.board.board[y_from][x_from], Figures.Tower):
+            # print("it is tower")
+            if self.board.board[y_from][x_from].color == "white":
+                # print("it is white")
+                if x_from == 0:
+                    # print("it is left white tower")
+                    self.w1_tower_state = False
+                if x_from == 7:
+                    # print("it is right white tower")
+                    self.w2_tower_state = False
+            else:
+                # print("it is black")
+                if x_from == 0:
+                    # print("it is left black tower")
+                    self.b1_tower_state = False
+                if x_from == 7:
+                    # print("it is right black tower")
+                    self.b2_tower_state = False
 
     def check_for_diags(self, x_from, y_from, x_to, y_to):
         if x_from + y_from == x_to + y_to:
@@ -128,8 +177,32 @@ class Game():
         if isinstance(self.board.board[y_from][x_from], Figures.King):
             if (abs(x_from - x_to) < 2) and (abs(y_from - y_to) < 2):
                 return not self.is_in_check(x_to, y_to)
+            elif (x_from - x_to == 2) and (y_from == y_to) and (self.board.board[y_from][x_from].color == "white") and \
+                    self.w_king_state and self.w1_tower_state:
+                self.board.move_figure(self.board.convert_position_backwards((0,7)), self.board.convert_position_backwards((3,7)))
+                return True
+            elif (x_to - x_from == 2) and (y_from == y_to) and (self.board.board[y_from][x_from].color == "white") and \
+                    self.w_king_state and self.w2_tower_state:
+                self.board.move_figure(self.board.convert_position_backwards((7,7)), self.board.convert_position_backwards((5,7)))
+                return True
+            elif (x_to - x_from == 2) and (y_from == y_to) and (self.board.board[y_from][x_from].color == "black") and \
+                    self.b_king_state and self.b2_tower_state:
+                self.board.move_figure(self.board.convert_position_backwards((7,0)), self.board.convert_position_backwards((5,0)))
+                return True
+            elif (x_from - x_to == 2) and (y_from == y_to) and (self.board.board[y_from][x_from].color == "black") and \
+                    self.b_king_state and self.b1_tower_state:
+                self.board.move_figure(self.board.convert_position_backwards((0,0)), self.board.convert_position_backwards((3,0)))
+                return True
             else:
                 return False
+
+        else:
+            return False
+
+    def check_for_king_strike(self, x_from, y_from, x_to, y_to):
+        if isinstance(self.board.board[y_from][x_from], Figures.King):
+            if (abs(x_from - x_to) < 2) and (abs(y_from - y_to) < 2):
+                return not self.is_in_check(x_to, y_to)
         else:
             return False
 
