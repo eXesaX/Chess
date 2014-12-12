@@ -178,20 +178,22 @@ class Game():
             if (abs(x_from - x_to) < 2) and (abs(y_from - y_to) < 2):
                 return not self.is_in_check(x_to, y_to)
             elif (x_from - x_to == 2) and (y_from == y_to) and (self.board.board[y_from][x_from].color == "white") and \
-                    self.w_king_state and self.w1_tower_state:
-                self.board.move_figure(self.board.convert_position_backwards((0,7)), self.board.convert_position_backwards((3,7)))
+                    self.w_king_state and self.w1_tower_state and (self.board.board[7][1] is None) and \
+                    (self.board.board[7][3] is None) and (not self.is_in_check(3, 7)):
+                self.board.move_figure(self.board.convert_position_backwards((0, 7)), self.board.convert_position_backwards((3, 7)))
                 return True
             elif (x_to - x_from == 2) and (y_from == y_to) and (self.board.board[y_from][x_from].color == "white") and \
-                    self.w_king_state and self.w2_tower_state:
-                self.board.move_figure(self.board.convert_position_backwards((7,7)), self.board.convert_position_backwards((5,7)))
+                    self.w_king_state and self.w2_tower_state and (self.board.board[7][5] is None) and (not self.is_in_check(5, 7)):
+                self.board.move_figure(self.board.convert_position_backwards((7, 7)), self.board.convert_position_backwards((5, 7)))
                 return True
             elif (x_to - x_from == 2) and (y_from == y_to) and (self.board.board[y_from][x_from].color == "black") and \
-                    self.b_king_state and self.b2_tower_state:
-                self.board.move_figure(self.board.convert_position_backwards((7,0)), self.board.convert_position_backwards((5,0)))
+                    self.b_king_state and self.b2_tower_state and (self.board.board[0][5] is None) and (not self.is_in_check(0, 7)):
+                self.board.move_figure(self.board.convert_position_backwards((7, 0)), self.board.convert_position_backwards((5, 0)))
                 return True
             elif (x_from - x_to == 2) and (y_from == y_to) and (self.board.board[y_from][x_from].color == "black") and \
-                    self.b_king_state and self.b1_tower_state:
-                self.board.move_figure(self.board.convert_position_backwards((0,0)), self.board.convert_position_backwards((3,0)))
+                    self.b_king_state and self.b1_tower_state and (self.board.board[0][1] is None) and \
+                    (self.board.board[0][3] is None) and (not self.is_in_check(3, 0)):
+                self.board.move_figure(self.board.convert_position_backwards((0, 0)), self.board.convert_position_backwards((3, 0)))
                 return True
             else:
                 return False
