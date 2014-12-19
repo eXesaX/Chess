@@ -1,4 +1,4 @@
 __author__ = 'user'
 import chessGUI
 
-game = chessGUI.GGame(1024, 768)
+game = chessGUI.GGame(900, 800)

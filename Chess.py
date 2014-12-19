@@ -9,14 +9,20 @@ import chessGUI
 class Game():
     turn = "white"
     board = None
+    #list of cells under strike
     hit_cells = []
+    #bools to show that figures never moved (for castle)
     w_king_state = True
     b_king_state = True
     w1_tower_state = True
     w2_tower_state = True
     b1_tower_state = True
     b2_tower_state = True
+    #coordinates for pawn that reached last line of the board
     pawn_to_replace = None
+    #en passant control
+    black_pawns_state = [False, False, False, False, False, False, False, False]
+    white_pawns_state = [False, False, False, False, False, False, False, False]
 
     def __init__(self):
         self.board = Chessboard.ChessBoard()
@@ -30,8 +36,6 @@ class Game():
             self.find_hit_cells()
 
     def find_hit_cells(self):
-        # тут я понял, что наверное было бы лучше возвращать списки возможных ходов в check_for_...(),
-        # но т.к. почти всю структуру проверки придется переделывать... то так:
         self.hit_cells = []
         for x_from in range(8):
             for y_from in range(8):
@@ -54,12 +58,13 @@ class Game():
         for x in range(8):
             for y in range(8):
                 if self.board.board[y][x] is not None:
-                    if (isinstance(self.board.board[y][x], Figures.King)) and (self.board.board[y][x].color == self.turn):
+                    if (isinstance(self.board.board[y][x], Figures.King)) and \
+                       (self.board.board[y][x].color == self.turn):
                         if self.is_in_check(x, y):
                             is_in_check = True
         return is_in_check
 
-    def check_and_move(self, start, end):
+    def check_and_move(self, start, end):  # does rule checking and figure movement
         x_from, y_from = start
         x_to, y_to = end
         if self.board.board[y_to][x_to] is None:
@@ -67,21 +72,27 @@ class Game():
         else:
             end_figure = self.board.board[y_to][x_to]
         if self.board.board[y_from][x_from] is not None:
+            #figures color checking
             if (self.board.board[y_from][x_from].color == self.turn) and \
                (end_figure.color != self.board.board[y_from][x_from].color):
+                #rules checking
                 if self.is_able_to_go(x_from, y_from, x_to, y_to) or self.check_for_king(x_from, y_from, x_to, y_to):
+                    #movement checking for castle
                     self.detect_first_move(x_from, y_from)
-                    self.board.move_figure(self.board.convert_position_backwards(start), self.board.convert_position_backwards(end))
+                    #actual moving
+                    self.board.move_figure(self.board.convert_position_backwards(start),
+                                           self.board.convert_position_backwards(end))
+                    #acquiring new stricken cells
                     self.find_hit_cells()
+                    #checking if king is in check, and if so, returning back to previous board state
                     if self.is_current_king_in_check():
-                        self.board.move_figure(self.board.convert_position_backwards(end), self.board.convert_position_backwards(start))
-                    else:
+                        self.board.move_figure(self.board.convert_position_backwards(end),
+                                               self.board.convert_position_backwards(start))
+                    else:  # check for pawns in last line and switch active player
                         self.find_pawn_for_replace()
                         if self.pawn_to_replace is not None:
                             self.ask_for_figure()
-                        print(self.pawn_to_replace)
                         self.change_turn()
-
 
     def is_able_to_go(self, x_from, y_from, x_to, y_to):
         return self.check_for_bishop(x_from, y_from, x_to, y_to) or \
@@ -99,33 +110,22 @@ class Game():
                self.check_for_tower(x_from, y_from, x_to, y_to) or \
                self.check_for_pawn_strike(x_from, y_from, x_to, y_to)
 
-    def detect_first_move(self, x_from, y_from):
-        # print("detect started")
+    def detect_first_move(self, x_from, y_from):  # for castle control
         if isinstance(self.board.board[y_from][x_from], Figures.King):
-            # print("this is king")
             if self.board.board[y_from][x_from].color == "white":
-                # print("it is white")
                 self.w_king_state = False
             else:
-                # print("it is black")
                 self.b_king_state = False
         if isinstance(self.board.board[y_from][x_from], Figures.Tower):
-            # print("it is tower")
             if self.board.board[y_from][x_from].color == "white":
-                # print("it is white")
                 if x_from == 0:
-                    # print("it is left white tower")
                     self.w1_tower_state = False
                 if x_from == 7:
-                    # print("it is right white tower")
                     self.w2_tower_state = False
             else:
-                # print("it is black")
                 if x_from == 0:
-                    # print("it is left black tower")
                     self.b1_tower_state = False
                 if x_from == 7:
-                    # print("it is right black tower")
                     self.b2_tower_state = False
 
     def find_pawn_for_replace(self):
@@ -200,8 +200,10 @@ class Game():
 
     def check_for_king(self, x_from, y_from, x_to, y_to):
         if isinstance(self.board.board[y_from][x_from], Figures.King):
+            #usual king movement
             if (abs(x_from - x_to) < 2) and (abs(y_from - y_to) < 2):
                 return not self.is_in_check(x_to, y_to)
+            #castle
             elif (x_from - x_to == 2) and \
                  (y_from == y_to) and \
                  (self.board.board[y_from][x_from].color == "white") and \
@@ -210,7 +212,8 @@ class Game():
                  (self.board.board[7][1] is None) and \
                  (self.board.board[7][3] is None) and \
                  (not self.is_in_check(3, 7)):
-                self.board.move_figure(self.board.convert_position_backwards((0, 7)), self.board.convert_position_backwards((3, 7)))
+                self.board.move_figure(self.board.convert_position_backwards((0, 7)),
+                                       self.board.convert_position_backwards((3, 7)))
                 return True
             elif (x_to - x_from == 2) and \
                  (y_from == y_to) and \
@@ -219,7 +222,8 @@ class Game():
                   self.w2_tower_state and \
                  (self.board.board[7][5] is None) and \
                  (not self.is_in_check(5, 7)):
-                self.board.move_figure(self.board.convert_position_backwards((7, 7)), self.board.convert_position_backwards((5, 7)))
+                self.board.move_figure(self.board.convert_position_backwards((7, 7)),
+                                       self.board.convert_position_backwards((5, 7)))
                 return True
             elif (x_to - x_from == 2) and \
                  (y_from == y_to) and \
@@ -227,7 +231,8 @@ class Game():
                   self.b_king_state and self.b2_tower_state and \
                  (self.board.board[0][5] is None) and \
                  (not self.is_in_check(0, 7)):
-                self.board.move_figure(self.board.convert_position_backwards((7, 0)), self.board.convert_position_backwards((5, 0)))
+                self.board.move_figure(self.board.convert_position_backwards((7, 0)),
+                                       self.board.convert_position_backwards((5, 0)))
                 return True
             elif (x_from - x_to == 2) and \
                  (y_from == y_to) and \
@@ -237,7 +242,8 @@ class Game():
                  (self.board.board[0][1] is None) and \
                  (self.board.board[0][3] is None) and \
                  (not self.is_in_check(3, 0)):
-                self.board.move_figure(self.board.convert_position_backwards((0, 0)), self.board.convert_position_backwards((3, 0)))
+                self.board.move_figure(self.board.convert_position_backwards((0, 0)),
+                                       self.board.convert_position_backwards((3, 0)))
                 return True
             else:
                 return False
@@ -277,46 +283,65 @@ class Game():
         else:
             return False
 
+    # i am very sorry for this
     def check_for_pawn(self, x_from, y_from, x_to, y_to):
         if self.board.board[y_to][x_to] is None:
-            end_figure = Figures.Figure("none") #?
+            end_figure = Figures.Figure("none")
         else:
             end_figure = self.board.board[y_to][x_to]
 
         if isinstance(self.board.board[y_from][x_from], Figures.Pawn):
             if self.board.board[y_from][x_from].color == "white":
-                if (x_to == x_from) & (y_from - y_to < 3) and (y_from - y_to > 0) and (end_figure.color == "none") and (y_from == 6):
-                    allow = True
-                    for i in range(min(y_from, y_to) + 1, max(y_from, y_to)):
-                        if self.board.board[i][x_from] is not None:
-                            allow = False
-                    return allow
-                else:
-                    if (x_to == x_from) and (y_from - y_to < 2) and (y_from - y_to > 0) and (end_figure.color == "none"):
-                        return True
-                    else:
-                        if (abs(x_to - x_from) == 1) and (y_from - y_to == 1) and (end_figure.color == "black"):
-                            return True
-                        else:
-                            return False
-            else:
-                if self.board.board[y_from][x_from].color == "black":
-                    if (x_to == x_from) and (y_to - y_from < 3) and (y_to - y_from > 0) and (end_figure.color == "none") and (y_from == 1):
+                #first move, 1 and 2 step move
+                if (x_to == x_from) and \
+                   (y_from - y_to == 2) and \
+                   (end_figure.color == "none") and \
+                   (y_from == 6):
+                        #obstacles detection
                         allow = True
                         for i in range(min(y_from, y_to) + 1, max(y_from, y_to)):
                             if self.board.board[i][x_from] is not None:
                                 allow = False
+                        #en passant control
+                        self.white_pawns_state[x_from] = True
                         return allow
-                    else:
-                        if (x_to == x_from) and (y_to - y_from < 2) and (y_to - y_from > 0) and (end_figure.color == "none"):
-                            return True
-                        else:
-                            if (abs(x_to - x_from) == 1) and (y_from - y_to == -1) and (end_figure.color == "white"):
-                                return True
-                            else:
-                                return False
+                #1 step move
+                elif (x_to == x_from) and (y_from - y_to == 1) and (end_figure.color == "none"):
+                    self.white_pawns_state[x_from] = False
+                    return True
+                #en passant
+                elif (y_from == 3) and (self.black_pawns_state[x_to]):
+                    self.black_pawns_state[x_to] = False
+                    self.board.board[y_from][x_to] = None
+                    return True
+                elif self.check_for_pawn_strike(x_from, y_from, x_to, y_to):
+                    return True
                 else:
                     return False
+            elif self.board.board[y_from][x_from].color == "black":  # same as white
+                if (x_to == x_from) and \
+                   (y_to - y_from == 2) and \
+                   (end_figure.color == "none") and \
+                   (y_from == 1):
+                        allow = True
+                        for i in range(min(y_from, y_to) + 1, max(y_from, y_to)):
+                            if self.board.board[i][x_from] is not None:
+                                allow = False
+                        self.black_pawns_state[x_from] = True
+                        return allow
+                elif (x_to == x_from) and (y_to - y_from == 1) and (end_figure.color == "none"):
+                    self.black_pawns_state[x_from] = False
+                    return True
+                elif (y_from == 4) and (self.white_pawns_state[x_to]):
+                    self.white_pawns_state[x_to] = False
+                    self.board.board[y_from][x_to] = None
+                    return True
+                elif self.check_for_pawn_strike(x_from, y_from, x_to, y_to):
+                    return True
+                else:
+                    return False
+            else:
+                return False
         else:
             return False
 
