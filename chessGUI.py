@@ -6,7 +6,8 @@ import Chess
 import Figures
 import GFigures
 import Player
-import sys
+import sys, os
+import History
 
 class GGame(Chess.Game):
     size = width, height = 0, 0
@@ -26,21 +27,36 @@ class GGame(Chess.Game):
 
         self.g_chessboard = GChessboard(self.screen)
 
+        arrows = pygame.image.load(os.path.join('resources','arrows.png'))
+        arrows = pygame.transform.scale(arrows, (self.g_chessboard.cell_size, self.g_chessboard.cell_size))
+
+        font = pygame.font.Font(None, 32)
+
+
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     sys.exit()
                 if event.type == pygame.MOUSEBUTTONDOWN:
-                    x_from, y_from = pygame.mouse.get_pos()
-                    x_from, y_from = int(x_from / self.g_chessboard.cell_size), \
-                                     int(y_from / self.g_chessboard.cell_size)
+                    x, y = pygame.mouse.get_pos()
+                    x_from = int(x / self.g_chessboard.cell_size)
+                    y_from = int(y / self.g_chessboard.cell_size)
                 if event.type == pygame.MOUSEBUTTONUP:
-                    x_to, y_to = pygame.mouse.get_pos()
-                    x_to, y_to = int(x_to / self.g_chessboard.cell_size), \
-                                 int(y_to / self.g_chessboard.cell_size)
+                    x, y = pygame.mouse.get_pos()
+                    x_to = int(x / self.g_chessboard.cell_size)
+                    y_to = int(y / self.g_chessboard.cell_size)
                     if (x_from in range(8)) and (x_to in range(8)) and (y_from in range(8)) and (y_to in range(8)):
                         self.check_and_move((x_from, y_from), (x_to, y_to))
             self.g_chessboard.draw()
+            # self.screen.fill((255,255,255), (8 * self.g_chessboard.cell_size,
+            #                                  0,
+            #                                  2 * self.g_chessboard.cell_size,
+            #                                  10 * self.g_chessboard.cell_size))
+            notation = self.history.get_last_10_as_notation()
+            for i in range(len(notation)):
+                text = font.render(notation[i], True, (0, 0 ,0))
+                self.screen.blit(text, (self.width - 2 * self.g_chessboard.cell_size, 50 * i))
+            # self.screen.blit(arrows, (self.width - self.g_chessboard.cell_size, 0, self.width, self.g_chessboard.cell_size))
             pygame.display.flip()
 
     def ask_for_figure(self):
@@ -64,14 +80,12 @@ class GGame(Chess.Game):
                     sys.exit()
                 if event.type == pygame.MOUSEBUTTONUP:
                     x_from, y_from = pygame.mouse.get_pos()
-                    x_from, y_from = int(x_from / self.g_chessboard.cell_size), \
-                                     int(y_from / self.g_chessboard.cell_size)
+                    x_from = int(x_from / self.g_chessboard.cell_size)
+                    y_from = int(y_from / self.g_chessboard.cell_size)
                     if (x_from == 8) and (y_from < 6):
                         self.replace_pawn_with(choice[y_from])
                         chosen = True
             pygame.display.flip()
-
-
 
 
 class GChessboard(Chessboard.ChessBoard):
@@ -82,7 +96,7 @@ class GChessboard(Chessboard.ChessBoard):
         super().__init__()
         self.update_board()
         self.context = context
-        self.cell_size = int(min(context.get_width() / 9, context.get_height() / 8))
+        self.cell_size = int(min(context.get_width() / 10, context.get_height() / 8))
 
     def draw(self):
         for x in range(8):
@@ -114,7 +128,3 @@ class GChessboard(Chessboard.ChessBoard):
                     self.board[i][j] = GFigures.GBishop(self.board[i][j].color)
                 if isinstance(self.board[i][j], Figures.Pawn):
                     self.board[i][j] = GFigures.GPawn(self.board[i][j].color)
-
-
-
-

@@ -2,8 +2,7 @@ __author__ = 'Petrov'
 
 import Chessboard
 import Figures
-import Player
-import chessGUI
+import History
 
 
 class Game():
@@ -23,6 +22,8 @@ class Game():
     #en passant control
     black_pawns_state = [False, False, False, False, False, False, False, False]
     white_pawns_state = [False, False, False, False, False, False, False, False]
+
+    history = History.History()
 
     def __init__(self):
         self.board = Chessboard.ChessBoard()
@@ -79,6 +80,8 @@ class Game():
                 if self.is_able_to_go(x_from, y_from, x_to, y_to) or self.check_for_king(x_from, y_from, x_to, y_to):
                     #movement checking for castle
                     self.detect_first_move(x_from, y_from)
+                    start_figure = self.board.board[y_from][x_from]
+                    end_figure = self.board.board[y_to][x_to]
                     #actual moving
                     self.board.move_figure(self.board.convert_position_backwards(start),
                                            self.board.convert_position_backwards(end))
@@ -92,6 +95,7 @@ class Game():
                         self.find_pawn_for_replace()
                         if self.pawn_to_replace is not None:
                             self.ask_for_figure()
+                        self.history.add_turn((x_from, y_from, x_to, y_to, start_figure, end_figure))
                         self.change_turn()
 
     def is_able_to_go(self, x_from, y_from, x_to, y_to):
