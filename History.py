@@ -35,13 +35,10 @@ class History():
             return None
 
     def get_last_10_as_notation(self):
-        last_turns = []
         if len(self.turns) > 0:
-            for i in range(min(10, len(self.turns))):
-                last_turns.append(self.turns.pop())
-            last_turns.reverse()
             notation = []
-            for turn in last_turns:
+            for turn in self.turns[-10:]:
+                castle = False
                 x_from, y_from, x_to, y_to, start_figure, end_figure = turn
                 a, b = self._convert_position_backwards((x_from, y_from))
                 c, d = self._convert_position_backwards((x_to, y_to))
@@ -49,7 +46,14 @@ class History():
                 pos2 = str(c) + str(d)
                 figure = ''
                 if isinstance(start_figure, Figures.King):
-                    figure = 'K'
+                    if (x_from - x_to) < 0 and (abs(x_from - x_to) != 1):
+                        castle = True
+                        figure = '0-0'
+                    elif (x_from - x_to > 0) and (abs(x_from - x_to) != 1):
+                        castle = True
+                        figure = '0-0-0'
+                    else:
+                        figure = 'K'
                 if isinstance(start_figure, Figures.Queen):
                     figure = 'Q'
                 if isinstance(start_figure, Figures.Tower):
@@ -60,14 +64,18 @@ class History():
                     figure = 'B'
                 if isinstance(start_figure, Figures.Pawn):
                     figure = 'p'
-                if end_figure is None:
-                    dot = '-'
+                if not castle:
+                    if end_figure is None:
+                        dot = '-'
+                    else:
+                        dot = 'x'
+                    notation.append(figure + pos1 + dot + pos2)
                 else:
-                    dot = 'x'
-                notation.append(figure + pos1 + dot + pos2)
+                    notation.append(figure)
+                # print(notation)
             return notation
         else:
-            return '..'
+            return ['..']
 
     def _convert_position_backwards(self, position):
         letters = "abcdefgh"

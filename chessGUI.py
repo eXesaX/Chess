@@ -9,12 +9,14 @@ import Player
 import sys, os
 import History
 
+
 class GGame(Chess.Game):
     size = width, height = 0, 0
     board = None
     screen = None
 
     def __init__(self, *args):
+        notation = ''
         super().__init__()
         pygame.init()
         if args:
@@ -27,11 +29,7 @@ class GGame(Chess.Game):
 
         self.g_chessboard = GChessboard(self.screen)
 
-        arrows = pygame.image.load(os.path.join('resources','arrows.png'))
-        arrows = pygame.transform.scale(arrows, (self.g_chessboard.cell_size, self.g_chessboard.cell_size))
-
         font = pygame.font.Font(None, 32)
-
 
         while True:
             for event in pygame.event.get():
@@ -48,15 +46,25 @@ class GGame(Chess.Game):
                     if (x_from in range(8)) and (x_to in range(8)) and (y_from in range(8)) and (y_to in range(8)):
                         self.check_and_move((x_from, y_from), (x_to, y_to))
             self.g_chessboard.draw()
-            # self.screen.fill((255,255,255), (8 * self.g_chessboard.cell_size,
-            #                                  0,
-            #                                  2 * self.g_chessboard.cell_size,
-            #                                  10 * self.g_chessboard.cell_size))
-            notation = self.history.get_last_10_as_notation()
-            for i in range(len(notation)):
-                text = font.render(notation[i], True, (0, 0 ,0))
-                self.screen.blit(text, (self.width - 2 * self.g_chessboard.cell_size, 50 * i))
-            # self.screen.blit(arrows, (self.width - self.g_chessboard.cell_size, 0, self.width, self.g_chessboard.cell_size))
+
+            new_notation = self.history.get_last_10_as_notation()
+            if new_notation != notation:
+                self.screen.fill((255,255,255), (8 * self.g_chessboard.cell_size,
+                                                 0,
+                                                 2 * self.g_chessboard.cell_size,
+                                                 10 * self.g_chessboard.cell_size))
+                for i in range(len(new_notation)):
+                    text = font.render(new_notation[i], True, (0, 0, 0))
+                    self.screen.blit(text, (self.width - 2 * self.g_chessboard.cell_size, 20 * i, self.g_chessboard.cell_size, self.g_chessboard.cell_size))
+                    notation = new_notation
+
+            #DEBUG
+            # self.find_hit_cells()
+            # for pair in self.hit_cells:
+            #     x,y = pair
+            #
+            #     pygame.draw.circle(self.screen, (0, 255, 0), (int(x * self.g_chessboard.cell_size + self.g_chessboard.cell_size / 2), int(y * self.g_chessboard.cell_size + self.g_chessboard.cell_size / 2)), 5)
+            #/DEBUG
             pygame.display.flip()
 
     def ask_for_figure(self):
